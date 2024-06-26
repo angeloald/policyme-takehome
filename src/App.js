@@ -43,12 +43,22 @@ function App() {
 export default App;
 
 const AttributesPanel = ({ attributes, onAttributeValueChange }) => {
+  const calculateModifier = (value) => {
+    if (value < 8) {
+      return -2
+    } else if (value < 9) {
+      return -1
+    } else {
+      return Math.floor((value - 10) / 2)
+    }
+    
+  }
   return (
     <>
       <h2>Attributes</h2>
       {Object.keys(attributes).map((attribute) => (
         <div key={attribute}>
-          {attribute}: {attributes[attribute]}
+          {attribute} Modifier({calculateModifier(attributes[attribute])}): {attributes[attribute]}
           <button
             onClick={() =>
               onAttributeValueChange(attribute, attributes[attribute] + 1)
