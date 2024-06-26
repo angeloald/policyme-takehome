@@ -6,12 +6,41 @@ function App() {
   const [num, setNum] = useState(0);
 
   const [attributes, setAttributes] = useState(() =>
-    Object.fromEntries(ATTRIBUTE_LIST.map((attribute) => [attribute, 1]))
+    Object.fromEntries(
+      ATTRIBUTE_LIST.map((attribute) => [attribute, { value: 0, modifier: -2 }])
+    )
+  );
+
+  const [skills, setSkills] = useState(() =>
+    Object.fromEntries(
+      SKILL_LIST.map((skill) => [
+        skill.name,
+        { attributeModifier: skill.attributeModifier, value: 0 },
+      ])
+    )
   );
 
   const changeAttributeValue = (attribute, value) => {
-    setAttributes({ ...attributes, [attribute]: value });
+    const calculateModifier = (value) => {
+      if (value < 8) {
+        return -2;
+      } else if (value < 9) {
+        return -1;
+      } else {
+        return Math.floor((value - 10) / 2);
+      }
+    };
+    setAttributes({
+      ...attributes,
+      [attribute]: { value, modifier: calculateModifier(value) },
+    });
   };
+
+  const changeSkillValue = (skill, value) => {
+    setSkills({ ...skills, [skill]: { ...skills[skill], value } });
+  };
+
+  const maxSkillPoints = 10 + 4 * attributes["Intelligence"].modifier;
 
   return (
     <div className="App">
@@ -36,6 +65,14 @@ function App() {
       <section>
         <ClassesPanel attributes={attributes} />
       </section>
+      <section>
+        <SkillsPanel
+          attributes={attributes}
+          skills={skills}
+          maxSkillPoints={maxSkillPoints}
+          onSkillValueChange={changeSkillValue}
+        />
+      </section>
     </div>
   );
 }
@@ -43,32 +80,23 @@ function App() {
 export default App;
 
 const AttributesPanel = ({ attributes, onAttributeValueChange }) => {
-  const calculateModifier = (value) => {
-    if (value < 8) {
-      return -2
-    } else if (value < 9) {
-      return -1
-    } else {
-      return Math.floor((value - 10) / 2)
-    }
-    
-  }
   return (
     <>
       <h2>Attributes</h2>
       {Object.keys(attributes).map((attribute) => (
         <div key={attribute}>
-          {attribute} Modifier({calculateModifier(attributes[attribute])}): {attributes[attribute]}
+          {attribute} Modifier({attributes[attribute].modifier}):
+          {attributes[attribute].value}
           <button
             onClick={() =>
-              onAttributeValueChange(attribute, attributes[attribute] + 1)
+              onAttributeValueChange(attribute, attributes[attribute].value + 1)
             }
           >
             +
           </button>
           <button
             onClick={() =>
-              onAttributeValueChange(attribute, attributes[attribute] - 1)
+              onAttributeValueChange(attribute, attributes[attribute].value - 1)
             }
           >
             -
@@ -103,7 +131,10 @@ const ClassesPanel = ({ attributes }) => {
         <button
           key={calculatedClass.name}
           onClick={() => setClassDisplayed(calculatedClass.name)}
-          style={{marginRight: 10, backgroundColor: calculatedClass.isSatisfied ? 'green' : 'red'}}
+          style={{
+            marginRight: 10,
+            backgroundColor: calculatedClass.isSatisfied ? "green" : "red",
+          }}
         >
           <div>
             {calculatedClass.name}:{" "}
@@ -120,5 +151,55 @@ const ClassesPanel = ({ attributes }) => {
         </div>
       )}
     </div>
+  );
+};
+
+const SkillsPanel = ({
+  skills,
+  attributes,
+  maxSkillPoints,
+  onSkillValueChange,
+}) => {
+  const [skillPointsConsumed, setSkillPointsConsumed] = useState(0);
+
+  const addSkillPoint = (skill) => {
+    setSkillPointsConsumed(skillPointsConsumed + 1);
+    onSkillValueChange(skill, skills[skill].value + 1);
+  };
+
+  const removeSkillPoint = (skill) => {
+    setSkillPointsConsumed(skillPointsConsumed - 1);
+    onSkillValueChange(skill, skills[skill].value - 1);
+  };
+
+  return (
+    <>
+      <h2>Skills</h2>
+      <p>Max skill points: {maxSkillPoints}</p>
+      {Object.keys(skills).map((skill) => {
+        return (
+          <div key={skill}>
+            {skill}: {skills[skill].value} (Modifier:{" "}
+            {skills[skill].attributeModifier}):{" "}
+            {attributes[skills[skill].attributeModifier].modifier}
+            <button
+              style={{ marginRight: 3 }}
+              onClick={() => addSkillPoint(skill)}
+            >
+              +
+            </button>
+            <button
+              style={{ marginRight: 3 }}
+              onClick={() => removeSkillPoint(skill)}
+            >
+              -
+            </button>
+            total:{" "}
+            {attributes[skills[skill].attributeModifier].modifier +
+              skills[skill].value}
+          </div>
+        );
+      })}
+    </>
   );
 };
