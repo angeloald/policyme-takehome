@@ -20,6 +20,11 @@ function App() {
     )
   );
 
+  const totalAttributes = Object.keys(attributes).reduce(
+    (acc, attribute) => acc + attributes[attribute].value,
+    0
+  );
+
   const changeAttributeValue = (attribute, value) => {
     const calculateModifier = (value) => {
       if (value < 8) {
@@ -30,10 +35,15 @@ function App() {
         return Math.floor((value - 10) / 2);
       }
     };
-    setAttributes({
-      ...attributes,
-      [attribute]: { value, modifier: calculateModifier(value) },
-    });
+
+    if (Number(totalAttributes + 1) <= 70) {
+      setAttributes({
+        ...attributes,
+        [attribute]: { value, modifier: calculateModifier(value) },
+      });
+    } else {
+      alert("Please decrease one attribute. Max is 70")
+    }
   };
 
   const changeSkillValue = (skill, value) => {
