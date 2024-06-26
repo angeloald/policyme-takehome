@@ -2,30 +2,33 @@ import { useState } from "react";
 import "./App.css";
 import { ATTRIBUTE_LIST, CLASS_LIST, SKILL_LIST } from "./consts.js";
 
-function App() {
-  const [num, setNum] = useState(0);
-
-  const [attributes, setAttributes] = useState(() =>
-    Object.fromEntries(
-      ATTRIBUTE_LIST.map((attribute) => [attribute, { value: 10, modifier: 0 }])
-    )
-  );
-
-  const [skills, setSkills] = useState(() =>
-    Object.fromEntries(
+const createCharacter = () => {
+  return {
+    attributes: Object.fromEntries(
+      ATTRIBUTE_LIST.map((attribute) => [
+        attribute,
+        { value: 10, modifier: 0 },
+      ])
+    ),
+    skills: Object.fromEntries(
       SKILL_LIST.map((skill) => [
         skill.name,
         { attributeModifier: skill.attributeModifier, value: 0 },
       ])
-    )
-  );
+    ),
+  };
 
-  const totalAttributes = Object.keys(attributes).reduce(
-    (acc, attribute) => acc + attributes[attribute].value,
-    0
-  );
+}
 
-  const changeAttributeValue = (attribute, value) => {
+function App() {
+  const [characters, setCharacters] = useState(() => {
+    return {
+      "Character 1": createCharacter()
+    };
+  });
+
+  const changeAttributeValue = (character, attribute, value) => {
+    const attributes = characters[character].attributes;
     const calculateModifier = (value) => {
       if (value < 8) {
         return -2;
@@ -36,65 +39,116 @@ function App() {
       }
     };
 
+    const totalAttributes = Object.keys(attributes).reduce(
+      (acc, attribute) => acc + attributes[attribute].value,
+      0
+    );
+
     if (Number(totalAttributes + 1) <= 70) {
-      setAttributes({
-        ...attributes,
-        [attribute]: { value, modifier: calculateModifier(value) },
+      setCharacters({
+        ...characters,
+        [character]: {
+          ...characters[character],
+          attributes: {
+            ...attributes,
+            [attribute]: { value, modifier: calculateModifier(value) },
+          },
+        },
       });
     } else {
-      alert("Please decrease one attribute. Max is 70")
+      alert("Please decrease one attribute. Max is 70");
     }
   };
 
-  const changeSkillValue = (skill, value) => {
-    setSkills({ ...skills, [skill]: { ...skills[skill], value } });
+  const changeSkillValue = (character, skill, value) => {
+    const skills = characters[character].skills;
+    setCharacters({
+      ...characters,
+      [character]: {
+        ...characters[character],
+        skills: { ...skills, [skill]: { ...skills[skill], value } },
+      },
+    });
   };
 
   const saveData = async () => {
-    await fetch("https://recruiting.verylongdomaintotestwith.ca/api/angeloald", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        attributes,
-        skills,
-      }),
-    })
-    alert("Saved character data")
-  }
+    await fetch(
+      "https://recruiting.verylongdomaintotestwith.ca/api/angeloald",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          characters,
+        }),
+      }
+    );
+    alert("Saved character data");
+  };
 
   const loadData = async () => {
-    const res = await fetch("https://recruiting.verylongdomaintotestwith.ca/api/angeloald")
-    const data = res.json()
-    setAttributes(data.attributes)
-    setSkills(data.skills)
-  }
+    const res = await fetch(
+      "https://recruiting.verylongdomaintotestwith.ca/api/angeloald"
+    );
+    const data = res.json();
+    setCharacters(data.characters);
+  };
 
-  const maxSkillPoints = 10 + 4 * attributes["Intelligence"].modifier;
+  const addCharacter = () => {
+    setCharacters({
+      ...characters,
+      [`Character ${Object.keys(characters).length + 1}`]: createCharacter(),
+    });
+  }
 
   return (
     <div className="App">
       <header className="App-header">
         <h1>React Coding Exercise</h1>
       </header>
-      {/* <section className="App-section">
-        <div>
-          Value:
-          {num}
-          <button>+</button>
-          <button>-</button>
-        </div>
-      </section> */}
-
       <section>
-        <button onClick={loadData}>Load character</button>
-        <button onClick={saveData}>Save character</button>
+        <button onClick={addCharacter}>Add New Character</button>
+        <button onClick={loadData}>Load Character</button>
+        <button onClick={saveData}>Save Character</button>
       </section>
 
+      {Object.keys(characters).map((characterName) => {
+        return (
+          <Character
+            key={characterName}
+            attributes={characters[characterName].attributes}
+            skills={characters[characterName].skills}
+            characterName={characterName}
+            changeAttributeValue={changeAttributeValue}
+            changeSkillValue={changeSkillValue}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+export default App;
+
+const Character = ({
+  attributes,
+  skills,
+  characterName,
+  changeAttributeValue,
+  changeSkillValue,
+}) => {
+  const maxSkillPoints = 10 + 4 * attributes["Intelligence"].modifier;
+
+  return (
+    <div style={{border: "1px yellow solid"}}>
+      <section>
+        <h2>Character: {characterName}</h2>
+      </section>
       <section>
         <AttributesPanel
           attributes={attributes}
+          character={characterName}
           onAttributeValueChange={changeAttributeValue}
         />
       </section>
@@ -105,17 +159,16 @@ function App() {
         <SkillsPanel
           attributes={attributes}
           skills={skills}
+          character={characterName}
           maxSkillPoints={maxSkillPoints}
           onSkillValueChange={changeSkillValue}
         />
       </section>
     </div>
   );
-}
+};
 
-export default App;
-
-const AttributesPanel = ({ attributes, onAttributeValueChange }) => {
+const AttributesPanel = ({ attributes, character, onAttributeValueChange }) => {
   return (
     <>
       <h2>Attributes</h2>
@@ -125,14 +178,22 @@ const AttributesPanel = ({ attributes, onAttributeValueChange }) => {
           {attributes[attribute].value}
           <button
             onClick={() =>
-              onAttributeValueChange(attribute, attributes[attribute].value + 1)
+              onAttributeValueChange(
+                character,
+                attribute,
+                attributes[attribute].value + 1
+              )
             }
           >
             +
           </button>
           <button
             onClick={() =>
-              onAttributeValueChange(attribute, attributes[attribute].value - 1)
+              onAttributeValueChange(
+                character,
+                attribute,
+                attributes[attribute].value - 1
+              )
             }
           >
             -
@@ -149,7 +210,7 @@ const ClassesPanel = ({ attributes }) => {
   const calculatedClasses = Object.keys(CLASS_LIST).map((name) => {
     let isSatisfied = true;
     Object.keys(attributes).forEach((attribute) => {
-      if (attributes[attribute] < CLASS_LIST[name][attribute]) {
+      if (attributes[attribute].value < CLASS_LIST[name][attribute]) {
         isSatisfied = false;
       }
     });
@@ -193,6 +254,7 @@ const ClassesPanel = ({ attributes }) => {
 const SkillsPanel = ({
   skills,
   attributes,
+  character,
   maxSkillPoints,
   onSkillValueChange,
 }) => {
@@ -200,12 +262,12 @@ const SkillsPanel = ({
 
   const addSkillPoint = (skill) => {
     setSkillPointsConsumed(skillPointsConsumed + 1);
-    onSkillValueChange(skill, skills[skill].value + 1);
+    onSkillValueChange(character, skill, skills[skill].value + 1);
   };
 
   const removeSkillPoint = (skill) => {
     setSkillPointsConsumed(skillPointsConsumed - 1);
-    onSkillValueChange(skill, skills[skill].value - 1);
+    onSkillValueChange(character, skill, skills[skill].value - 1);
   };
 
   return (
