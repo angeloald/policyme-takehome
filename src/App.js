@@ -7,7 +7,7 @@ function App() {
 
   const [attributes, setAttributes] = useState(() =>
     Object.fromEntries(
-      ATTRIBUTE_LIST.map((attribute) => [attribute, { value: 0, modifier: -2 }])
+      ATTRIBUTE_LIST.map((attribute) => [attribute, { value: 10, modifier: 0 }])
     )
   );
 
@@ -40,6 +40,27 @@ function App() {
     setSkills({ ...skills, [skill]: { ...skills[skill], value } });
   };
 
+  const saveData = async () => {
+    await fetch("https://recruiting.verylongdomaintotestwith.ca/api/angeloald", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        attributes,
+        skills,
+      }),
+    })
+    alert("Saved character data")
+  }
+
+  const loadData = async () => {
+    const res = await fetch("https://recruiting.verylongdomaintotestwith.ca/api/angeloald")
+    const data = res.json()
+    setAttributes(data.attributes)
+    setSkills(data.skills)
+  }
+
   const maxSkillPoints = 10 + 4 * attributes["Intelligence"].modifier;
 
   return (
@@ -55,6 +76,11 @@ function App() {
           <button>-</button>
         </div>
       </section> */}
+
+      <section>
+        <button onClick={loadData}>Load character</button>
+        <button onClick={saveData}>Save character</button>
+      </section>
 
       <section>
         <AttributesPanel
